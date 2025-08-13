@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firebase Connection Test</title>
+</head>
+<body>
+    <h1>Firebase Connection Test</h1>
+    <div id="status">Testing connection...</div>
+    <div id="data"></div>
+    <button onclick="testWrite()">Test Write</button>
+    <button onclick="testRead()">Test Read</button>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCRq3UTh6v_KWMepAT3kIkOEYMUf3j6eK0",
+            authDomain: "homeautomation-49080.firebaseapp.com",
+            databaseURL: "https://homeautomation-49080-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            projectId: "homeautomation-49080",
+            storageBucket: "homeautomation-49080.firebasestorage.app",
+            messagingSenderId: "377136097626",
+            appId: "1:377136097626:web:8ab36f1757bd0a40a96b63"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Test connection
+        function testConnection() {
+            const statusDiv = document.getElementById('status');
+            
+            // Test database connection
+            const connectedRef = database.ref('.info/connected');
+            connectedRef.on('value', (snapshot) => {
+                if (snapshot.val() === true) {
+                    statusDiv.innerHTML = '<span style="color: green;">✓ Connected to Firebase</span>';
+                    console.log('Connected to Firebase');
+                } else {
+                    statusDiv.innerHTML = '<span style="color: red;">✗ Disconnected from Firebase</span>';
+                    console.log('Disconnected from Firebase');
+                }
+            });
+        }
+
+        function testWrite() {
+            console.log('Testing write...');
+            database.ref('test/write').set({
+                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                message: 'Test write from dashboard',
+                value: Math.random()
+            }).then(() => {
+                console.log('Write successful');
+                alert('Write successful!');
+            }).catch((error) => {
+                console.error('Write failed:', error);
+                alert('Write failed: ' + error.message);
+            });
+        }
+
+        function testRead() {
+            console.log('Testing read...');
+            database.ref('test').once('value').then((snapshot) => {
+                const data = snapshot.val();
+                document.getElementById('data').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                console.log('Read successful:', data);
+            }).catch((error) => {
+                console.error('Read failed:', error);
+                alert('Read failed: ' + error.message);
+            });
+        }
+
+        // Test authentication
+        function testAuth() {
+            firebase.auth().signInWithEmailAndPassword('amit@gmail.com', 'amit1234')
+                .then((userCredential) => {
+                    console.log('Auth successful:', userCredential.user.email);
+                    document.getElementById('status').innerHTML += '<br><span style="color: green;">✓ Authenticated as ' + userCredential.user.email + '</span>';
+                })
+                .catch((error) => {
+                    console.error('Auth failed:', error);
+                    document.getElementById('status').innerHTML += '<br><span style="color: red;">✗ Authentication failed: ' + error.message + '</span>';
+                });
+        }
+
+        // Initialize when page loads
+        window.onload = function() {
+            testConnection();
+            testAuth();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Home Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --background-dark: #0f172a;
+            --background-light: #f8fafc;
+            --card-background: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            --border-radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .logo i {
+            font-size: 2rem;
+            background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header-stats {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), #8b5cf6, #ec4899);
+            opacity: 0;
+            transition: var(--transition);
+        }
+        
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+        
+        .card:hover::before {
+            opacity: 1;
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+        }
+        
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        
+        .sensor-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--background-light);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .sensor-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .sensor-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .control-group {
+            margin: 1.5rem 0;
+        }
+        
+        .control-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: var(--transition);
+            margin: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-off {
+            background: linear-gradient(135deg, var(--secondary-color), #475569);
+        }
+        
+        .btn-on {
+            background: linear-gradient(135deg, var(--success-color), #059669);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger-color), #dc2626);
+        }
+        
+        .slider-container {
+            margin: 1rem 0;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border-color);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            position: relative;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+            cursor: pointer;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+        }
+        
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .slider-value {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .value-display {
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--secondary-color);
+            transition: var(--transition);
+            border-radius: 34px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background: white;
+            transition: var(--transition);
+            border-radius: 50%;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        input:checked + .toggle-slider {
+            background: var(--success-color);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            position: relative;
+        }
+        
+        .status-on {
+            background: var(--success-color);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+        
+        .status-on::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--success-color);
+            border-radius: 50%;
+            animation: pulse-ring 2s infinite;
+        }
+        
+        .status-off {
+            background: var(--secondary-color);
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+        
+        .notifications-container {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 1rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) var(--border-color);
+        }
+        
+        .notifications-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .notifications-container::-webkit-scrollbar-track {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+        
+        .notifications-container::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 3px;
+        }
+        
+        .notification-item {
+            background: var(--background-light);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.875rem;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .notification-item:hover {
+            transform: translateX(4px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .notification-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .notification-actor {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .notification-time {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+        
+        .notification-auto { border-left-color: var(--success-color); }
+        .notification-manual { border-left-color: var(--warning-color); }
+        .notification-motion { border-left-color: var(--danger-color); }
+        
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-connected {
+            background: linear-gradient(135deg, var(--success-color), #059669);
+        }
+        
+        .status-disconnected {
+            background: linear-gradient(135deg, var(--danger-color), #dc2626);
+        }
+        
+        .motor-controls {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .direction-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+        
+        .auto-control {
+            background: var(--background-light);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .auto-control-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .auto-control-label {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+        
+        .manual-status {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.875rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 2rem;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Login Screen Styles */
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 400px;
+            width: 100%;
+            margin: 2rem;
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .login-header i {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .login-header h1 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .login-header p {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        .login-form {
+            margin-bottom: 2rem;
+        }
+        
+        .input-group {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        
+        .input-group i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            z-index: 1;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 1rem;
+            background: white;
+            transition: var(--transition);
+            box-sizing: border-box;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .login-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            display: none;
+        }
+        
+        .login-footer {
+            text-align: center;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .login-footer p {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+        
+        .logout-btn {
+            background: linear-gradient(135deg, var(--danger-color), #dc2626);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .logout-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .led-controls {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        /* Utility classes */
+        .hidden {
+            display: none !important;
+        }
+        
+        .show {
+            display: block !important;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .header-content {
+                padding: 0 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .header-stats {
+                gap: 1rem;
+            }
+            
+            .sensor-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .direction-controls {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <i class="fas fa-home"></i>
+                <h1>SmartHome Pro</h1>
+                <p>Secure IoT Dashboard Access</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="email" placeholder="Email Address" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="Password" required>
+                </div>
+                <button type="submit" class="login-btn">
+                    <span id="loginBtnText">Sign In</span>
+                    <div id="loginSpinner" class="loading-spinner" style="display: none;"></div>
+                </button>
+                <div id="loginError" class="error-message" style="display: none;"></div>
+            </form>
+            <div class="login-footer">
+                <p>Demo Credentials: amit@gmail.com / amit1234</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard (Hidden initially) -->
+    <div id="mainDashboard" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-home"></i>
+                    <span>SmartHome Pro</span>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="headerTemp">--°</div>
+                        <div class="stat-label">Temperature</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="headerHumidity">--%</div>
+                        <div class="stat-label">Humidity</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="headerLux">--</div>
+                        <div class="stat-label">Light</div>
+                    </div>
+                    <button class="logout-btn" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Content -->
+        <div class="container">
+          <!-- Notifications -->
+                <div class="card">
+                  <!-- Connection Status -->
+        <div class="connection-status status-disconnected" id="connectionStatus">
+            <i class="fas fa-wifi"></i>
+            <span>Connecting...</span>
+        </div>
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <h3 class="card-title">System Notifications</h3>
+                    </div>
+                    
+                    <div class="notifications-container" id="notificationsContainer">
+                        <div class="notification-item">
+                            <div class="notification-header">
+                                <span class="notification-actor">
+                                    <i class="fas fa-info-circle"></i> System
+                                </span>
+                                <span class="notification-time">Just now</span>
+                            </div>
+                            <div>Dashboard initialized and ready for monitoring</div>
+                        </div>
+                    </div>
+                </div>
+            <div class="dashboard-grid">
+                <!-- Environmental Sensors -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-thermometer-half"></i>
+                        </div>
+                        <h3 class="card-title">Environmental Sensors</h3>
+                    </div>
+                    
+                    <div class="sensor-grid">
+                        <div class="sensor-item">
+                            <div class="sensor-value" id="temperature">--°C</div>
+                            <div class="sensor-label">🌡️ Temperature</div>
+                        </div>
+                        <div class="sensor-item">
+                            <div class="sensor-value" id="humidity">--%</div>
+                            <div class="sensor-label">💧 Humidity</div>
+                        </div>
+                        <div class="sensor-item">
+                            <div class="sensor-value" id="lux">--</div>
+                            <div class="sensor-label">☀️ Light Level</div>
+                        </div>
+                        <div class="sensor-item">
+                            <div class="sensor-value" id="motion">
+                                <span class="status-indicator status-off" id="motionIndicator"></span>
+                                <span id="motionText">Standby</span>
+                            </div>
+                            <div class="sensor-label">🚶 Motion Sensor</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Motor Control -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <h3 class="card-title">Motor Control System</h3>
+                    </div>
+                    
+                    <div class="control-group">
+                        <button id="motorToggle" class="btn btn-off" onclick="toggleMotor()">
+                            <i class="fas fa-power-off"></i>
+                            <span>Motor OFF</span>
+                        </button>
+                    </div>
+                    
+                    <div class="motor-controls">
+                        <div class="control-group">
+                            <div class="control-label">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>Speed Control</span>
+                            </div>
+                            <div class="slider-container">
+                                <div class="slider-value">
+                                    <span>Motor Speed</span>
+                                    <span class="value-display" id="speedValue">50%</span>
+                                </div>
+                                <input type="range" id="motorSpeed" class="slider" min="0" max="100" value="50" 
+                                       title="Motor Speed Control" oninput="updateMotorSpeed(this.value)">
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <div class="control-label">
+                                <i class="fas fa-exchange-alt"></i>
+                                <span>Direction</span>
+                            </div>
+                            <div class="direction-controls">
+                                <button id="forwardBtn" class="btn btn-on" onclick="setMotorDirection('forward')">
+                                    <i class="fas fa-arrow-up"></i> Forward
+                                </button>
+                                <button id="reverseBtn" class="btn btn-off" onclick="setMotorDirection('reverse')">
+                                    <i class="fas fa-arrow-down"></i> Reverse
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="auto-control">
+                        <div class="auto-control-header">
+                            <span class="auto-control-label">
+                                <i class="fas fa-magic"></i> Auto Temperature Control (≥30°C)
+                            </span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="autoMotor" checked onchange="toggleAutoMotor()">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="manual-status">Manual Override: <span id="motorManualStatus">OFF</span></div>
+                    </div>
+                </div>
+                
+                <!-- LED Control -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <h3 class="card-title">Individual LED Control</h3>
+                    </div>
+                    
+                    <div class="led-controls">
+                        <div class="control-group">
+                            <div class="control-label">
+                                <i class="fas fa-lightbulb"></i>
+                                <span>LED 1</span>
+                            </div>
+                            <button id="led1Toggle" class="btn btn-off" onclick="toggleLED1()">
+                                <i class="fas fa-power-off"></i>
+                                <span>LED1 OFF</span>
+                            </button>
+                        </div>
+                        
+                        <div class="control-group">
+                            <div class="control-label">
+                                <i class="fas fa-lightbulb"></i>
+                                <span>LED 2</span>
+                            </div>
+                            <button id="led2Toggle" class="btn btn-off" onclick="toggleLED2()">
+                                <i class="fas fa-power-off"></i>
+                                <span>LED2 OFF</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="auto-control">
+                        <div class="auto-control-header">
+                            <span class="auto-control-label">
+                                <i class="fas fa-eye"></i> Auto Light Control (&lt;400 lux)
+                            </span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="autoLights" checked onchange="toggleAutoLights()">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="manual-status">Manual Override: <span id="ledsManualStatus">OFF</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="footer">
+                <p>Last device communication: <span id="lastSeen">Waiting for connection...</span></p>
+                <p>SmartHome Pro Dashboard • Real-time IoT Monitoring & Control</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+
+    <script>
+        /*
+        CONFIGURATION INSTRUCTIONS:
+        1. Replace the firebaseConfig object below with your actual Firebase project configuration
+        2. You can find these values in your Firebase project settings under "General" tab
+        3. Click on "Config" radio button to see the configuration object
+        4. Make sure your Firebase Realtime Database rules allow read/write access
+        */
+        
+        // Firebase configuration - REPLACE WITH YOUR ACTUAL CONFIG
+        const firebaseConfig = {
+        apiKey: "AIzaSyCRq3UTh6v_KWMepAT3kIkOEYMUf3j6eK0",
+        authDomain: "homeautomation-49080.firebaseapp.com",
+        databaseURL: "https://homeautomation-49080-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        projectId: "homeautomation-49080",
+        storageBucket: "homeautomation-49080.firebasestorage.app",
+        messagingSenderId: "377136097626",
+        appId: "1:377136097626:web:8ab36f1757bd0a40a96b63"
+      };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // Enable debugging
+        firebase.database.enableLogging(true);
+        
+        console.log('Firebase initialized with config:', firebaseConfig);
+
+        // Global state
+        let isConnected = false;
+        let isLoggedIn = false;
+        let currentUser = null;
+        let motorState = {
+            on: false,
+            speed: 50,
+            direction: "forward",
+            manual: false,
+            autoEnabled: true
+        };
+        let led1State = {
+            on: false,
+            manual: false,
+            autoEnabled: true
+        };
+        let led2State = {
+            on: false,
+            manual: false,
+            autoEnabled: true
+        };
+        let sensorData = {
+            temperature: 0,
+            humidity: 0,
+            lux: 0,
+            motion: false
+        };
+
+        // Initialize application
+        function initApp() {
+            setupLoginForm();
+            // Check if user is already logged in
+            const savedUser = localStorage.getItem('smarthome_user');
+            if (savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    showDashboard();
+                } catch (e) {
+                    localStorage.removeItem('smarthome_user');
+                }
+            }
+        }
+
+        function setupLoginForm() {
+            const loginForm = document.getElementById('loginForm');
+            loginForm.addEventListener('submit', handleLogin);
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.querySelector('.login-btn');
+            const loginBtnText = document.getElementById('loginBtnText');
+            const loginSpinner = document.getElementById('loginSpinner');
+            const errorDiv = document.getElementById('loginError');
+            
+            // Show loading state
+            loginBtn.disabled = true;
+            loginBtnText.style.display = 'none';
+            loginSpinner.style.display = 'block';
+            errorDiv.style.display = 'none';
+            
+            try {
+                // Authenticate with Firebase
+                await firebase.auth().signInWithEmailAndPassword(email, password);
+                
+                currentUser = { email: email };
+                localStorage.setItem('smarthome_user', JSON.stringify(currentUser));
+                
+                showDashboard();
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                errorDiv.textContent = 'Login failed: ' + error.message;
+                errorDiv.style.display = 'block';
+            } finally {
+                // Reset loading state
+                loginBtn.disabled = false;
+                loginBtnText.style.display = 'block';
+                loginSpinner.style.display = 'none';
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainDashboard').style.display = 'block';
+            isLoggedIn = true;
+            initDashboard();
+        }
+
+        function logout() {
+            firebase.auth().signOut().then(() => {
+                localStorage.removeItem('smarthome_user');
+                currentUser = null;
+                isLoggedIn = false;
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('mainDashboard').style.display = 'none';
+            });
+        }
+
+        // Initialize dashboard
+        function initDashboard() {
+            if (!isLoggedIn) return;
+            
+            console.log('Initializing dashboard...');
+            updateConnectionStatus(false);
+            
+            // Set up Firebase connection monitoring
+            const connectedRef = database.ref('.info/connected');
+            connectedRef.on('value', (snapshot) => {
+                isConnected = snapshot.val() === true;
+                console.log('Firebase connection status:', isConnected);
+                updateConnectionStatus(isConnected);
+            });
+
+            // Listen to sensor data
+            database.ref('sensors').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    console.log('Received sensor data:', data);
+                    updateSensorDisplay(data);
+                } else {
+                    console.log('No sensor data available');
+                }
+            }, (error) => {
+                console.error('Error reading sensors:', error);
+            });
+
+            // Listen to motion state
+            database.ref('state/motion').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    console.log('Motion state:', snapshot.val());
+                    updateMotionDisplay(snapshot.val());
+                }
+            }, (error) => {
+                console.error('Error reading motion state:', error);
+            });
+
+            // Listen to motor controls
+            database.ref('controls/motor').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    console.log('Motor state updated:', data);
+                    updateMotorState(data);
+                }
+            }, (error) => {
+                console.error('Error reading motor controls:', error);
+            });
+
+            // Listen to LED1 controls
+            database.ref('controls/led1').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    console.log('LED1 state updated:', data);
+                    updateLED1State(data);
+                }
+            }, (error) => {
+                console.error('Error reading LED1 controls:', error);
+            });
+
+            // Listen to LED2 controls
+            database.ref('controls/led2').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    console.log('LED2 state updated:', data);
+                    updateLED2State(data);
+                }
+            }, (error) => {
+                console.error('Error reading LED2 controls:', error);
+            });
+
+            // Listen to notifications
+            database.ref('notifications').limitToLast(10).on('child_added', (snapshot) => {
+                if (snapshot.exists()) {
+                    console.log('New notification:', snapshot.val());
+                    addNotification(snapshot.val());
+                }
+            }, (error) => {
+                console.error('Error reading notifications:', error);
+            });
+
+            // Listen to last seen
+            database.ref('meta/last_seen').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    updateLastSeen(snapshot.val());
+                }
+            }, (error) => {
+                console.error('Error reading last seen:', error);
+            });
+            
+            console.log('Dashboard initialization complete');
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            if (connected) {
+                statusEl.innerHTML = '<i class="fas fa-wifi"></i><span>Connected</span>';
+                statusEl.className = 'connection-status status-connected';
+            } else {
+                statusEl.innerHTML = '<i class="fas fa-wifi"></i><span>Disconnected</span>';
+                statusEl.className = 'connection-status status-disconnected';
+            }
+        }
+
+        function updateSensorDisplay(data) {
+            // Update main sensor displays
+            if (data.temperature !== undefined) {
+                const tempValue = data.temperature.toFixed(1);
+                document.getElementById('temperature').textContent = tempValue + '°C';
+                document.getElementById('headerTemp').textContent = tempValue + '°';
+            }
+            if (data.humidity !== undefined) {
+                const humValue = data.humidity.toFixed(1);
+                document.getElementById('humidity').textContent = humValue + '%';
+                document.getElementById('headerHumidity').textContent = humValue + '%';
+            }
+            if (data.lux !== undefined) {
+                document.getElementById('lux').textContent = data.lux;
+                document.getElementById('headerLux').textContent = data.lux;
+            }
+        }
+
+        function updateMotionDisplay(motion) {
+            const indicator = document.getElementById('motionIndicator');
+            const text = document.getElementById('motionText');
+            
+            if (motion) {
+                indicator.className = 'status-indicator status-on';
+                text.textContent = 'Motion Detected!';
+            } else {
+                indicator.className = 'status-indicator status-off';
+                text.textContent = 'Standby';
+            }
+        }
+
+        function updateMotorState(data) {
+            motorState = { ...motorState, ...data };
+            
+            const toggleBtn = document.getElementById('motorToggle');
+            const speedSlider = document.getElementById('motorSpeed');
+            const speedValue = document.getElementById('speedValue');
+            const forwardBtn = document.getElementById('forwardBtn');
+            const reverseBtn = document.getElementById('reverseBtn');
+            const autoCheckbox = document.getElementById('autoMotor');
+            const manualStatus = document.getElementById('motorManualStatus');
+
+            // Update toggle button
+            if (motorState.on) {
+                toggleBtn.className = 'btn btn-on';
+                toggleBtn.innerHTML = '<i class="fas fa-power-off"></i><span>Motor ON</span>';
+            } else {
+                toggleBtn.className = 'btn btn-off';
+                toggleBtn.innerHTML = '<i class="fas fa-power-off"></i><span>Motor OFF</span>';
+            }
+
+            // Update speed
+            if (motorState.speed !== undefined) {
+                speedSlider.value = motorState.speed;
+                speedValue.textContent = motorState.speed + '%';
+            }
+
+            // Update direction
+            if (motorState.direction === 'forward') {
+                forwardBtn.className = 'btn btn-on';
+                reverseBtn.className = 'btn btn-off';
+            } else {
+                forwardBtn.className = 'btn btn-off';
+                reverseBtn.className = 'btn btn-on';
+            }
+
+            // Update auto control
+            if (motorState.autoEnabled !== undefined) {
+                autoCheckbox.checked = motorState.autoEnabled;
+            }
+
+            // Update manual status
+            manualStatus.textContent = motorState.manual ? 'ON' : 'OFF';
+        }
+
+        function updateLedsState(data) {
+            ledsState = { ...ledsState, ...data };
+            
+            const toggleBtn = document.getElementById('ledsToggle');
+            const autoCheckbox = document.getElementById('autoLights');
+            const manualStatus = document.getElementById('ledsManualStatus');
+
+            // Update toggle button
+            if (ledsState.on) {
+                toggleBtn.className = 'btn btn-on';
+                toggleBtn.innerHTML = '<i class="fas fa-lightbulb"></i><span>LEDs ON</span>';
+            } else {
+                toggleBtn.className = 'btn btn-off';
+                toggleBtn.innerHTML = '<i class="fas fa-lightbulb"></i><span>LEDs OFF</span>';
+            }
+
+            // Update auto control
+            if (ledsState.autoEnabled !== undefined) {
+                autoCheckbox.checked = ledsState.autoEnabled;
+            }
+
+            // Update manual status
+            manualStatus.textContent = ledsState.manual ? 'ON' : 'OFF';
+        }
+
+        function updateLED1State(data) {
+            led1State = { ...led1State, ...data };
+            
+            const toggleBtn = document.getElementById('led1Toggle');
+
+            // Update toggle button
+            if (led1State.on) {
+                toggleBtn.className = 'btn btn-on';
+                toggleBtn.innerHTML = '<i class="fas fa-lightbulb"></i><span>LED1 ON</span>';
+            } else {
+                toggleBtn.className = 'btn btn-off';
+                toggleBtn.innerHTML = '<i class="fas fa-lightbulb"></i><span>LED1 OFF</span>';
+            }
+        }
+
+        function updateLED2State(data) {
+            led2State = { ...led2State, ...data };
+            
+            const toggleBtn = document.getElementById('led2Toggle');
+
+            // Update toggle button
+            if (led2State.on) {
+                toggleBtn.className = 'btn btn-on';
+                toggleBtn.innerHTML = '<i class="fas fa-lightbulb"></i><span>LED2 ON</span>';
+            } else {
+                toggleBtn.className = 'btn btn-off';
+                toggleBtn.innerHTML = '<i class="fas fa-lightbulb"></i><span>LED2 OFF</span>';
+            }
+        }
+
+        function addNotification(notification) {
+            const container = document.getElementById('notificationsContainer');
+            const notifEl = document.createElement('div');
+            
+            // Determine notification class and icon based on type
+            let notifClass = 'notification-item';
+            let iconClass = 'fas fa-info-circle';
+            
+            if (notification.type === 'auto' || notification.actor === 'auto_light' || notification.actor === 'auto_temp') {
+                notifClass += ' notification-auto';
+                iconClass = 'fas fa-magic';
+            } else if (notification.type === 'manual') {
+                notifClass += ' notification-manual';
+                iconClass = 'fas fa-hand-pointer';
+            } else if (notification.type === 'motion') {
+                notifClass += ' notification-motion';
+                iconClass = 'fas fa-walking';
+            }
+            
+            notifEl.className = notifClass;
+            
+            const timestamp = notification.ts ? new Date(notification.ts).toLocaleString() : new Date().toLocaleString();
+            
+            notifEl.innerHTML = `
+                <div class="notification-header">
+                    <span class="notification-actor">
+                        <i class="${iconClass}"></i> ${notification.actor}
+                    </span>
+                    <span class="notification-time">${timestamp}</span>
+                </div>
+                <div>${notification.message}</div>
+            `;
+            
+            // Insert at the top
+            container.insertBefore(notifEl, container.firstChild);
+            
+            // Keep only last 15 notifications
+            while (container.children.length > 15) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        function updateLastSeen(timestamp) {
+            const lastSeenEl = document.getElementById('lastSeen');
+            if (timestamp) {
+                const date = new Date(timestamp);
+                lastSeenEl.textContent = date.toLocaleString();
+            }
+        }
+
+        // Control functions
+        function toggleMotor() {
+            console.log('toggleMotor called, current state:', motorState.on);
+            const newState = !motorState.on;
+            
+            database.ref('controls/motor/on').set(newState)
+                .then(() => {
+                    console.log('Motor state updated successfully to:', newState);
+                })
+                .catch((error) => {
+                    console.error('Failed to update motor state:', error);
+                    alert('Failed to update motor state: ' + error.message);
+                });
+            
+            // Send notification about dashboard control
+            const notificationRef = database.ref('notifications').push();
+            notificationRef.set({
+                ts: firebase.database.ServerValue.TIMESTAMP,
+                type: 'manual',
+                actor: 'dashboard_user',
+                message: `Motor ${newState ? 'turned ON' : 'turned OFF'} via dashboard`,
+                details: '{}'
+            }).catch((error) => {
+                console.error('Failed to send notification:', error);
+            });
+        }
+
+        function updateMotorSpeed(speed) {
+            document.getElementById('speedValue').textContent = speed + '%';
+            database.ref('controls/motor/speed').set(parseInt(speed))
+                .then(() => {
+                    console.log('Motor speed updated to:', speed);
+                })
+                .catch((error) => {
+                    console.error('Failed to update motor speed:', error);
+                });
+        }
+
+        function setMotorDirection(direction) {
+            console.log('Setting motor direction to:', direction);
+            database.ref('controls/motor/direction').set(direction)
+                .then(() => {
+                    console.log('Motor direction updated successfully');
+                })
+                .catch((error) => {
+                    console.error('Failed to update motor direction:', error);
+                });
+        }
+
+        function toggleAutoMotor() {
+            const enabled = document.getElementById('autoMotor').checked;
+            console.log('Toggle auto motor:', enabled);
+            database.ref('controls/motor/auto_enabled').set(enabled)
+                .then(() => {
+                    console.log('Auto motor setting updated');
+                })
+                .catch((error) => {
+                    console.error('Failed to update auto motor:', error);
+                });
+        }
+
+        function toggleLEDs() {
+            const newState = !ledsState.on;
+            database.ref('controls/leds/on').set(newState);
+            
+            // Send notification about dashboard control
+            const notificationRef = database.ref('notifications').push();
+            notificationRef.set({
+                ts: firebase.database.ServerValue.TIMESTAMP,
+                type: 'manual',
+                actor: 'dashboard_user',
+                message: `LEDs ${newState ? 'turned ON' : 'turned OFF'} via dashboard`,
+                details: '{}'
+            });
+        }
+
+        function toggleLED1() {
+            console.log('toggleLED1 called, current state:', led1State.on);
+            const newState = !led1State.on;
+            
+            database.ref('controls/led1/on').set(newState)
+                .then(() => {
+                    console.log('LED1 state updated successfully to:', newState);
+                })
+                .catch((error) => {
+                    console.error('Failed to update LED1 state:', error);
+                    alert('Failed to update LED1 state: ' + error.message);
+                });
+            
+            // Send notification about dashboard control
+            const notificationRef = database.ref('notifications').push();
+            notificationRef.set({
+                ts: firebase.database.ServerValue.TIMESTAMP,
+                type: 'manual',
+                actor: 'dashboard_user',
+                message: `LED1 ${newState ? 'turned ON' : 'turned OFF'} via dashboard`,
+                details: '{}'
+            }).catch((error) => {
+                console.error('Failed to send notification:', error);
+            });
+        }
+
+        function toggleLED2() {
+            console.log('toggleLED2 called, current state:', led2State.on);
+            const newState = !led2State.on;
+            
+            database.ref('controls/led2/on').set(newState)
+                .then(() => {
+                    console.log('LED2 state updated successfully to:', newState);
+                })
+                .catch((error) => {
+                    console.error('Failed to update LED2 state:', error);
+                    alert('Failed to update LED2 state: ' + error.message);
+                });
+            
+            // Send notification about dashboard control
+            const notificationRef = database.ref('notifications').push();
+            notificationRef.set({
+                ts: firebase.database.ServerValue.TIMESTAMP,
+                type: 'manual',
+                actor: 'dashboard_user',
+                message: `LED2 ${newState ? 'turned ON' : 'turned OFF'} via dashboard`,
+                details: '{}'
+            }).catch((error) => {
+                console.error('Failed to send notification:', error);
+            });
+        }
+
+        function toggleAutoLights() {
+            const enabled = document.getElementById('autoLights').checked;
+            console.log('Toggle auto lights:', enabled);
+            Promise.all([
+                database.ref('controls/led1/auto_enabled').set(enabled),
+                database.ref('controls/led2/auto_enabled').set(enabled)
+            ]).then(() => {
+                console.log('Auto lights setting updated');
+            }).catch((error) => {
+                console.error('Failed to update auto lights:', error);
+            });
+        }
+
+        // Initialize application when page loads
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
