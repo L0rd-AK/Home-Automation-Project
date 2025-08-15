@@ -50,28 +50,148 @@ Motor Switch         -> D4 (GPIO2) + GND
 LEDs Switch          -> D0 (GPIO16) + GND
 ```
 
-### Wiring Diagram
+### 🔌 Detailed Wiring Connections
+
+#### Power Connections
 ```
 ESP8266 NodeMCU          Components
 ================         ==========
-3V3 ------------------- VCC (DHT11, PIR)
+3V3 ------------------- VCC (DHT11, PIR Sensor)
 GND ------------------- GND (All components)
-D5 (GPIO14) ----------- PIR Signal
-A0 -------------------- LDR Signal (with pull-down resistor)
-D6 (GPIO12) ----------- DHT11 Data
-D1 (GPIO5) ------------ L298N ENA
-D2 (GPIO4) ------------ L298N IN1
-D3 (GPIO0) ------------ L298N IN2
-D7 (GPIO13) ----------- LED1 Anode (+)
-D8 (GPIO15) ----------- LED2 Anode (+)
-D4 (GPIO2) ------------ Switch 1 (Motor)
-D0 (GPIO16) ----------- Switch 2 (LEDs)
-
-L298N Motor Driver:
-OUT1, OUT2 ------------ DC Motor
-+12V ------------------- External Power Supply
-GND -------------------- Common Ground
 ```
+
+#### Sensor Connections
+```
+ESP8266 Pin             Sensor Pin          Details
+=============           ===========         =======
+D5 (GPIO14) ----------- PIR Signal         Digital input, 3.3V logic
+A0 -------------------- LDR Signal         Analog input (0-1023)
+                        (with 10kΩ pull-down resistor)
+D6 (GPIO12) ----------- DHT11 Data         Digital input, 4.7kΩ pull-up resistor
+```
+
+#### Motor Driver (L298N) Connections
+```
+ESP8266 Pin             L298N Pin          Details
+=============           ==========         =======
+D1 (GPIO5) ------------ ENA               PWM control for motor speed
+D2 (GPIO4) ------------ IN1               Motor direction control
+D3 (GPIO0) ------------ IN2               Motor direction control
+                        OUT1, OUT2 ------- DC Motor terminals
+                        +12V ------------- External 12V power supply
+                        GND -------------- Common ground with ESP8266
+```
+
+#### LED Connections
+```
+ESP8266 Pin             LED Pin            Details
+=============           ========           =======
+D7 (GPIO13) ----------- LED1 Anode (+)    220Ω current limiting resistor
+D8 (GPIO15) ----------- LED2 Anode (+)    220Ω current limiting resistor
+                        LED Cathode (-) --- GND
+```
+
+#### Manual Switch Connections
+```
+ESP8266 Pin             Switch Pin         Details
+=============           ===========        =======
+D4 (GPIO2) ------------ Switch 1 (Motor)  One terminal to GPIO, other to GND
+D0 (GPIO16) ----------- Switch 2 (LEDs)   One terminal to GPIO, other to GND
+```
+
+### 📐 Wiring Diagram
+
+```
+                    ESP8266 NodeMCU
+                ┌─────────────────────┐
+                │                     │
+                │ 3V3 ────────────────┼─── VCC (DHT11, PIR)
+                │                     │
+                │ GND ────────────────┼─── GND (All Components)
+                │                     │
+                │ D5 (GPIO14) ────────┼─── PIR Signal
+                │                     │
+                │ A0 ─────────────────┼─── LDR + 10kΩ to GND
+                │                     │
+                │ D6 (GPIO12) ────────┼─── DHT11 Data + 4.7kΩ to 3V3
+                │                     │
+                │ D1 (GPIO5) ─────────┼─── L298N ENA (PWM)
+                │                     │
+                │ D2 (GPIO4) ─────────┼─── L298N IN1
+                │                     │
+                │ D3 (GPIO0) ─────────┼─── L298N IN2
+                │                     │
+                │ D7 (GPIO13) ────────┼─── LED1 + 220Ω
+                │                     │
+                │ D8 (GPIO15) ────────┼─── LED2 + 220Ω
+                │                     │
+                │ D4 (GPIO2) ─────────┼─── Motor Switch ── GND
+                │                     │
+                │ D0 (GPIO16) ────────┼─── LEDs Switch ── GND
+                └─────────────────────┘
+
+                    L298N Motor Driver
+                ┌─────────────────────┐
+                │                     │
+                │ ENA ←── D1 (GPIO5)  │
+                │ IN1 ←── D2 (GPIO4)  │
+                │ IN2 ←── D3 (GPIO0)  │
+                │                     │
+                │ OUT1 ───────────────┼─── DC Motor Terminal 1
+                │ OUT2 ───────────────┼─── DC Motor Terminal 2
+                │                     │
+                │ +12V ←── External Power Supply
+                │ GND ←── Common Ground
+                └─────────────────────┘
+
+                    Component Details
+                ┌─────────────────────┐
+                │                     │
+                │ PIR Sensor:         │
+                │ • VCC: 3.3V         │
+                │ • GND: Common       │
+                │ • Signal: D5        │
+                │                     │
+                │ DHT11:              │
+                │ • VCC: 3.3V         │
+                │ • GND: Common       │
+                │ • Data: D6 + 4.7kΩ │
+                │                     │
+                │ LDR:                │
+                │ • Signal: A0        │
+                │ • 10kΩ to GND      │
+                │                     │
+                │ LEDs:               │
+                │ • Anode: D7/D8      │
+                │ • 220Ω resistor     │
+                │ • Cathode: GND      │
+                │                     │
+                │ Switches:           │
+                │ • One terminal: D4/D0
+                │ • Other terminal: GND
+                └─────────────────────┘
+```
+
+### ⚠️ Important Wiring Notes
+
+1. **Power Supply**: Use a stable 3.3V supply for ESP8266 and sensors
+2. **Ground Connection**: Ensure all components share the same ground
+3. **Pull-up Resistors**: DHT11 requires 4.7kΩ pull-up resistor to 3V3
+4. **Pull-down Resistor**: LDR needs 10kΩ pull-down resistor to GND
+5. **Current Limiting**: LEDs require 220Ω resistors to limit current
+6. **Motor Power**: L298N needs separate 12V supply for motor operation
+7. **Wire Length**: Keep sensor wires as short as possible to reduce noise
+8. **Shielding**: Consider using shielded cables for analog sensors in noisy environments
+
+### 🔧 Component Specifications
+
+- **ESP8266**: 3.3V operation, 80MHz clock, 4MB flash
+- **PIR Sensor**: 3.3V-5V, 110° detection angle, 3-7m range
+- **DHT11**: 3.3V-5V, -40°C to +80°C, ±2°C accuracy
+- **LDR**: 5mm diameter, 10kΩ at 10 lux, 1kΩ at 1000 lux
+- **L298N**: 5V logic, 12V motor supply, 2A per channel
+- **DC Motor**: 12V, 100-200mA typical current draw
+- **LEDs**: 3.3V forward voltage, 20mA typical current
 
 ## 🛠️ Software Setup
 
