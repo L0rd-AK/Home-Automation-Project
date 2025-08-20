@@ -1,38 +1,7 @@
+// ...existing code...
 /*
   ESP8266 Smart Home System with Firebase Realtime Database
-  
-  SETUP INSTRUCTIONS:
-  1. Install libraries via Arduino IDE Library Manager:
-     - FirebaseESP8266 by Mobizt
-     - DHT sensor library by Adafruit
-     - ArduinoJson (dependency for Firebase)
-  
-  2. Configure WiFi and Firebase credentials in secrets.h:
-     - WIFI_SSID, WIFI_PASS
-     - API_KEY, DATABASE_URL, USER_EMAIL, USER_PASSWORD
-  
-  3. Pin mapping (change #define values below if needed):
-     - PIR motion sensor -> D5 (GPIO14)
-     - LDR light sensor -> A0 (analog)
-     - DHT11 temp/humidity -> D6 (GPIO12)
-     - L298N motor driver:
-       * ENA (PWM) -> D1 (GPIO5)
-       * IN1 -> D2 (GPIO4)
-       * IN2 -> D3 (GPIO0)
-     - LED1 -> D7 (GPIO13)
-     - LED2 -> D8 (GPIO15)
-     - Manual switches:
-       * Motor switch -> D4 (GPIO2)
-       * LEDs switch -> D0 (GPIO16)
-  
-  4. Upload code to ESP8266 (NodeMCU/WeMos)
-  
-  TEST CASES:
-  - Wave hand in front of PIR -> check notifications in dashboard
-  - Cover LDR with hand -> LEDs should auto-turn on
-  - Heat DHT11 sensor -> motor should auto-start
-  - Toggle manual switches -> check manual override in dashboard
-  - Rapid PIR triggers -> notifications should be rate-limited
+  (Updated: improved PIR filtering for large/steady motion + dedicated motion LED)
 */
 
 #include <ESP8266WiFi.h>
@@ -52,6 +21,7 @@
 #define MOTOR_IN2_PIN     0   // D3
 #define LED1_PIN          13  // D7
 #define LED2_PIN          15  // D8
+#define MOTION_LED_PIN    1   // D9/TX (new dedicated motion LED)
 #define SWITCH_MOTOR_PIN  2   // D4
 #define SWITCH_LEDS_PIN   16  // D0
 
@@ -62,6 +32,12 @@
 #define DEBOUNCE_DELAY    100   // Switch debounce in ms
 #define MAX_MOTOR_PWM     204   // 80% of 255 for motor protection
 #define MAX_NOTIFICATIONS_PER_MINUTE 10
+#define SENSOR_READ_INTERVAL  200   // PIR/LDR read interval in ms (faster for responsive motion)
+#define MOTION_LED_TIMEOUT    10000 // Motion LED auto-off timeout in ms (10 seconds)
+
+// PIR sensor settings (simplified for reliability)
+#define PIR_DEBOUNCE_MS       300   // Minimum time between motion triggers
+#define PIR_STABLE_TIME_MS    150   // Time PIR must be stable before reading
 
 // DHT sensor setup
 #define DHT_TYPE DHT11
@@ -85,11 +61,17 @@ unsigned long notificationMinuteStart = 0;
 // Sensor states
 bool motionDetected = false;
 bool lastMotionState = false;
+unsigned long lastMotionChangeTime = 0;
+bool pirStableState = false;
 float temperature = 0;
 float humidity = 0;
 int ldrValue = 0;
 bool autoLightTriggered = false;
 bool autoMotorTriggered = false;
+
+// Motion LED state
+bool motionLedOn = false;
+unsigned long motionLedOffTime = 0;
 
 // Control states
 bool motorOn = false;
@@ -119,6 +101,7 @@ void setup() {
   pinMode(MOTOR_IN2_PIN, OUTPUT);
   pinMode(LED1_PIN, OUTPUT);
   pinMode(LED2_PIN, OUTPUT);
+  pinMode(MOTION_LED_PIN, OUTPUT);
   pinMode(SWITCH_MOTOR_PIN, INPUT_PULLUP);
   pinMode(SWITCH_LEDS_PIN, INPUT_PULLUP);
   
@@ -128,9 +111,12 @@ void setup() {
   analogWrite(MOTOR_PWM_PIN, 0);
   digitalWrite(LED1_PIN, LOW);
   digitalWrite(LED2_PIN, LOW);
+  digitalWrite(MOTION_LED_PIN, LOW);
   
   // Initialize DHT sensor
   dht.begin();
+  
+  if (DEBUG) Serial.println("ESP8266 Smart Home System Started");
   
   // Connect to WiFi
   connectWiFi();
@@ -165,7 +151,7 @@ void loop() {
   }
   
   // Read sensors periodically
-  if (currentTime - lastSensorRead > 2000) { // Every 2 seconds
+  if (currentTime - lastSensorRead > SENSOR_READ_INTERVAL) {
     readSensors();
     lastSensorRead = currentTime;
   }
@@ -174,6 +160,13 @@ void loop() {
   if (currentTime - lastDHTRead > 10000) { // Every 10 seconds
     readDHTSensor();
     lastDHTRead = currentTime;
+  }
+  
+  // Handle motion LED auto-off timeout
+  if (motionLedOn && currentTime >= motionLedOffTime) {
+    motionLedOn = false;
+    digitalWrite(MOTION_LED_PIN, LOW);
+    if (DEBUG) Serial.println("Motion LED auto-turned off");
   }
   
   // Check manual switches with debouncing
@@ -240,18 +233,41 @@ void initializeFirebaseState() {
 }
 
 void readSensors() {
-  // Read PIR sensor
+  // Simple and reliable PIR motion detection
   bool currentMotion = digitalRead(PIR_PIN);
+  unsigned long currentTime = millis();
+  
+  // Check if PIR state changed
   if (currentMotion != lastMotionState) {
-    motionDetected = currentMotion;
     lastMotionState = currentMotion;
+    lastMotionChangeTime = currentTime;
+    pirStableState = false;
+  }
+  
+  // Wait for stability before acting on the reading
+  if (!pirStableState && (currentTime - lastMotionChangeTime) > PIR_STABLE_TIME_MS) {
+    pirStableState = true;
     
-    if (motionDetected) {
-      sendNotification("motion", "PIR", "Motion detected in living room", 
-                      "{\"lux\":" + String(ldrValue) + ",\"temp\":" + String(temperature) + "}");
+    if (currentMotion && !motionDetected) {
+      // Motion started
+      motionDetected = true;
+      
+      sendNotification("motion", "PIR", "Motion detected", 
+                      "{\"lux\":" + String(ldrValue) + "}");
       Firebase.setBool(firebaseData, "/state/motion", true);
-    } else {
+      
+      // Turn on motion LED
+      motionLedOn = true;
+      motionLedOffTime = currentTime + MOTION_LED_TIMEOUT;
+      digitalWrite(MOTION_LED_PIN, HIGH);
+      
+      if (DEBUG) Serial.println("Motion detected");
+    }
+    else if (!currentMotion && motionDetected) {
+      // Motion ended
+      motionDetected = false;
       Firebase.setBool(firebaseData, "/state/motion", false);
+      if (DEBUG) Serial.println("Motion ended");
     }
   }
   
@@ -268,9 +284,11 @@ void readDHTSensor() {
     humidity = newHum;
     
     if (DEBUG) {
-      Serial.printf("Temperature: %.1f°C, Humidity: %.1f%%, LDR: %d\n", 
+      Serial.printf("DHT - Temp: %.1f°C, Humidity: %.1f%%, LDR: %d\n", 
                    temperature, humidity, ldrValue);
     }
+  } else {
+    if (DEBUG) Serial.println("DHT read error");
   }
 }
 
@@ -326,6 +344,11 @@ void checkManualSwitches() {
 }
 
 void checkFirebaseControls() {
+  // Avoid heavy Firebase operations in fast loops - only check occasionally
+  static unsigned long lastFirebaseControlCheck = 0;
+  if (millis() - lastFirebaseControlCheck < 1000) return; // Check only every 1 second
+  lastFirebaseControlCheck = millis();
+  
   // Check motor controls
   if (Firebase.getBool(firebaseData, "/controls/motor/on")) {
     bool newMotorOn = firebaseData.boolData();
@@ -392,6 +415,11 @@ void updateFirebaseSensors() {
   Firebase.setFloat(firebaseData, "/sensors/humidity", humidity);
   Firebase.setInt(firebaseData, "/sensors/lux", ldrValue);
   Firebase.setTimestamp(firebaseData, "/meta/last_seen");
+  
+  if (DEBUG) {
+    Serial.printf("Firebase update - Temp: %.1f°C, Humidity: %.1f%%, LDR: %d\n", 
+                  temperature, humidity, ldrValue);
+  }
 }
 
 void processAutomaticControls() {
@@ -476,13 +504,12 @@ void updateLEDControl() {
 void sendNotification(String type, String actor, String message, String details) {
   // Rate limiting
   if (notificationCount >= MAX_NOTIFICATIONS_PER_MINUTE) {
-    if (DEBUG) Serial.println("Notification rate limited");
     return;
   }
   
-  // Avoid duplicate notifications within 30 seconds
+  // Simple debouncing for motion notifications
   unsigned long currentTime = millis();
-  if (currentTime - lastNotificationTime < 30000 && type == "motion") {
+  if (currentTime - lastNotificationTime < 2000 && type == "motion") {
     return;
   }
   
@@ -498,6 +525,6 @@ void sendNotification(String type, String actor, String message, String details)
   lastNotificationTime = currentTime;
   
   if (DEBUG) {
-    Serial.printf("Notification sent: %s - %s\n", type.c_str(), message.c_str());
+    Serial.printf("Notification: %s\n", message.c_str());
   }
 }

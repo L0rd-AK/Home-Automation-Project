@@ -99,77 +99,211 @@ D4 (GPIO2) ------------ Switch 1 (Motor)  One terminal to GPIO, other to GND
 D0 (GPIO16) ----------- Switch 2 (LEDs)   One terminal to GPIO, other to GND
 ```
 
-### 📐 Wiring Diagram
+### 📐 Complete System Block Diagram
 
 ```
-                    ESP8266 NodeMCU
-                ┌─────────────────────┐
-                │                     │
-                │ 3V3 ────────────────┼─── VCC (DHT11, PIR)
-                │                     │
-                │ GND ────────────────┼─── GND (All Components)
-                │                     │
-                │ D5 (GPIO14) ────────┼─── PIR Signal
-                │                     │
-                │ A0 ─────────────────┼─── LDR + 10kΩ to GND
-                │                     │
-                │ D6 (GPIO12) ────────┼─── DHT11 Data + 4.7kΩ to 3V3
-                │                     │
-                │ D1 (GPIO5) ─────────┼─── L298N ENA (PWM)
-                │                     │
-                │ D2 (GPIO4) ─────────┼─── L298N IN1
-                │                     │
-                │ D3 (GPIO0) ─────────┼─── L298N IN2
-                │                     │
-                │ D7 (GPIO13) ────────┼─── LED1 + 220Ω
-                │                     │
-                │ D8 (GPIO15) ────────┼─── LED2 + 220Ω
-                │                     │
-                │ D4 (GPIO2) ─────────┼─── Motor Switch ── GND
-                │                     │
-                │ D0 (GPIO16) ────────┼─── LEDs Switch ── GND
-                └─────────────────────┘
+                           ESP8266 SMART HOME SYSTEM
+                          ═══════════════════════════════════
+                          
+    ┌─────────────────────────────────────────────────────────────────────────────────┐
+    │                            POWER DISTRIBUTION                                   │
+    └─────────────────────────────────────────────────────────────────────────────────┘
+                          External 5V ──┬── NodeMCU VIN
+                                        ├── PIR Sensor VCC
+                                        ├── DHT11 VCC
+                                        └── L298N Logic VCC
+                          
+                          External 12V ────── L298N Motor VCC
+                          
+                          Common GND ──┬── All Components GND
+                                      └── All LED Cathodes
 
-                    L298N Motor Driver
-                ┌─────────────────────┐
-                │                     │
-                │ ENA ←── D1 (GPIO5)  │
-                │ IN1 ←── D2 (GPIO4)  │
-                │ IN2 ←── D3 (GPIO0)  │
-                │                     │
-                │ OUT1 ───────────────┼─── DC Motor Terminal 1
-                │ OUT2 ───────────────┼─── DC Motor Terminal 2
-                │                     │
-                │ +12V ←── External Power Supply
-                │ GND ←── Common Ground
-                └─────────────────────┘
+    ┌─────────────────────────────────────────────────────────────────────────────────┐
+    │                               MAIN CONTROLLER                                  │
+    │                           ESP8266 NodeMCU v1.0                                │
+    └─────────────────────────────────────────────────────────────────────────────────┘
+    
+                      ┌───────────────────────────────────────┐
+                      │          PIN ASSIGNMENTS              │
+                      │                                       │
+                      │  RST  ○ ○ A0   ←── LDR Signal        │
+                      │  3V3  ○ ○ GND                         │
+                      │  EN   ○ ○ VIN  ←── 5V Power Input     │
+                      │  S3   ○ ○ 3V3                         │
+                      │  S2   ○ ○ GND                         │
+                      │  S1   ○ ○ D0   ←── LEDs Switch        │
+                      │  SC   ○ ○ D1   ←── Motor PWM (ENA)    │
+                      │  S0   ○ ○ D2   ←── Motor IN1          │
+                      │  SK   ○ ○ D3   ←── Motor IN2          │
+                      │  GND  ○ ○ D4   ←── Motor Switch       │
+                      │  3V3  ○ ○ D5   ←── PIR Signal         │
+                      │  EN   ○ ○ D6   ←── DHT11 Data         │
+                      │  CLK  ○ ○ D7   ←── LED1 Control       │
+                      │  SD0  ○ ○ D8   ←── LED2 Control       │
+                      │  CMD  ○ ○ RX                          │
+                      │  SD1  ○ ○ TX   ←── Motion LED         │
+                      │                                       │
+                      └───────────────────────────────────────┘
 
-                    Component Details
-                ┌─────────────────────┐
-                │                     │
-                │ PIR Sensor:         │
-                │ • VCC: 3.3V         │
-                │ • GND: Common       │
-                │ • Signal: D5        │
-                │                     │
-                │ DHT11:              │
-                │ • VCC: 3.3V         │
-                │ • GND: Common       │
-                │ • Data: D6 + 4.7kΩ │
-                │                     │
-                │ LDR:                │
-                │ • Signal: A0        │
-                │ • 10kΩ to GND      │
-                │                     │
-                │ LEDs:               │
-                │ • Anode: D7/D8      │
-                │ • 220Ω resistor     │
-                │ • Cathode: GND      │
-                │                     │
-                │ Switches:           │
-                │ • One terminal: D4/D0
-                │ • Other terminal: GND
-                └─────────────────────┘
+    ┌─────────────────────────────────────────────────────────────────────────────────┐
+    │                              SENSOR NETWORK                                    │
+    └─────────────────────────────────────────────────────────────────────────────────┘
+
+    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+    │   PIR SENSOR    │    │   DHT11 SENSOR  │    │   LDR SENSOR    │
+    │   (HC-SR501)    │    │  (Temp/Humid)   │    │ (Light Level)   │
+    │                 │    │                 │    │                 │
+    │ VCC ────────────┼────┼─── VCC ─────────┼────┼─── +3V3         │
+    │ GND ────────────┼────┼─── GND ─────────┼────┼─── GND          │
+    │ OUT ──── D5     │    │ DATA ─── D6     │    │ Signal ── A0    │
+    │                 │    │    (+ 4.7kΩ     │    │    (+ 10kΩ      │
+    │ Detection Range │    │     pullup)     │    │     pulldown)   │
+    │ 3-7m, 110°      │    │                 │    │                 │
+    └─────────────────┘    └─────────────────┘    └─────────────────┘
+
+    ┌─────────────────────────────────────────────────────────────────────────────────┐
+    │                             ACTUATOR NETWORK                                   │
+    └─────────────────────────────────────────────────────────────────────────────────┘
+
+    ┌─────────────────────────────────────────────────────────────────────────────────┐
+    │                            MOTOR CONTROL SYSTEM                                │
+    └─────────────────────────────────────────────────────────────────────────────────┘
+    
+              D1(PWM) ──┐    D2 ──┐    D3 ──┐
+                        │         │         │
+              ┌─────────▼─────────▼─────────▼─────────┐
+              │           L298N Motor Driver         │
+              │                                      │
+              │  ENA ○    IN1 ○    IN2 ○    VCC ○   │ ←── 5V Logic
+              │                                      │
+              │  OUT1 ○   OUT2 ○   GND ○    +12V ○  │ ←── 12V Motor Power
+              └─────────┬─────────┬─────────┬─────────┘
+                        │         │         │
+                        └─────────┼─────────┘
+                                  │
+                        ┌─────────▼─────────┐
+                        │     DC MOTOR      │
+                        │                   │
+                        │  • 12V Operation  │
+                        │  • PWM Speed Ctrl │
+                        │  • Bi-directional │
+                        │  • 2A Max Current │
+                        └───────────────────┘
+
+    ┌─────────────────────────────────────────────────────────────────────────────────┐
+    │                              LED CONTROL SYSTEM                                │
+    └─────────────────────────────────────────────────────────────────────────────────┘
+    
+    D7 ──┬── 220Ω ──┬── LED1 Anode          D8 ──┬── 220Ω ──┬── LED2 Anode
+         │          │                            │          │
+         │          └── LED1 Cathode ── GND      │          └── LED2 Cathode ── GND
+         │                                       │
+         │                                       │
+    TX ──┴── 220Ω ──┬── Motion LED Anode        │
+                    │                            │
+                    └── Motion LED Cathode ── GND
+
+    ┌─────────────────────────────────────────────────────────────────────────────────┐
+    │                            MANUAL CONTROL INTERFACE                            │
+    └─────────────────────────────────────────────────────────────────────────────────┘
+    
+    ┌─────────────────┐                      ┌─────────────────┐
+    │  MOTOR SWITCH   │                      │   LEDs SWITCH   │
+    │                 │                      │                 │
+    │     ○ ○         │                      │     ○ ○         │
+    │     │ │         │                      │     │ │         │
+    │ D4 ─┘ └─ GND    │                      │ D0 ─┘ └─ GND    │
+    │                 │                      │                 │
+    │ • Toggle Motor  │                      │ • Toggle LEDs   │
+    │ • Manual Override│                     │ • Manual Override│
+    │ • Debounced     │                      │ • Debounced     │
+    └─────────────────┘                      └─────────────────┘
+
+    ┌─────────────────────────────────────────────────────────────────────────────────┐
+    │                         COMMUNICATION & CLOUD INTERFACE                        │
+    └─────────────────────────────────────────────────────────────────────────────────┘
+    
+              ESP8266 WiFi ←─────→ Internet ←─────→ Firebase Realtime Database
+                   │                                          │
+                   │                                          │
+              ┌────▼────┐                               ┌─────▼─────┐
+              │ Dashboard│                               │Cloud Data │
+              │ Controls │                               │ Storage   │
+              │          │                               │           │
+              │ • Motor  │                               │ • Sensors │
+              │ • LEDs   │                               │ • Controls│
+              │ • Sensors│                               │ • Logs    │
+              │ • Notifications                          │ • Config  │
+              └─────────┘                               └───────────┘
+
+    ┌─────────────────────────────────────────────────────────────────────────────────┐
+    │                              SIGNAL FLOW DIAGRAM                               │
+    └─────────────────────────────────────────────────────────────────────────────────┘
+    
+    [PIR Motion] ──┐
+                   ├──► [ESP8266] ──► [Firebase] ──► [Dashboard Notification]
+    [LDR Light] ───┤           │
+                   │           ▼
+    [DHT Temp/Hum]─┘      [Auto Control Logic]
+                               │
+                               ▼
+                          [Actuators: Motor + LEDs]
+                               ▲
+                               │
+    [Manual Switches] ─────────┤
+                               │
+    [Dashboard Commands] ──────┘
+
+    ┌─────────────────────────────────────────────────────────────────────────────────┐
+    │                              PIN MAPPING TABLE                                 │
+    └─────────────────────────────────────────────────────────────────────────────────┘
+    
+    ┌─────────────────┬──────────────┬──────────────┬────────────────────────────────┐
+    │ Component       │ ESP8266 Pin  │ NodeMCU Pin  │ Function & Details             │
+    ├─────────────────┼──────────────┼──────────────┼────────────────────────────────┤
+    │ PIR Sensor      │ GPIO14       │ D5           │ Digital Input, Motion Detect   │
+    │ LDR Sensor      │ ADC0         │ A0           │ Analog Input, Light Level      │
+    │ DHT11 Sensor    │ GPIO12       │ D6           │ Digital I/O, Temp/Humidity     │
+    │ Motor PWM       │ GPIO5        │ D1           │ PWM Output, Speed Control      │
+    │ Motor IN1       │ GPIO4        │ D2           │ Digital Output, Direction 1    │
+    │ Motor IN2       │ GPIO0        │ D3           │ Digital Output, Direction 2    │
+    │ LED1            │ GPIO13       │ D7           │ Digital Output, Main Light 1   │
+    │ LED2            │ GPIO15       │ D8           │ Digital Output, Main Light 2   │
+    │ Motion LED      │ GPIO1        │ TX           │ Digital Output, Motion Indicator│
+    │ Motor Switch    │ GPIO2        │ D4           │ Digital Input, Manual Control  │
+    │ LEDs Switch     │ GPIO16       │ D0           │ Digital Input, Manual Control  │
+    └─────────────────┴──────────────┴──────────────┴────────────────────────────────┘
+
+    ┌─────────────────────────────────────────────────────────────────────────────────┐
+    │                          COMPONENT SPECIFICATIONS                              │
+    └─────────────────────────────────────────────────────────────────────────────────┘
+    
+    • ESP8266: 3.3V, 80MHz, 4MB Flash, 80KB RAM, WiFi 802.11 b/g/n
+    • PIR Sensor: 3.3V-5V, 110° detection, 3-7m range, <60µA standby
+    • DHT11: 3.3V-5V, -40°C to +80°C, ±2°C accuracy, 20-90% RH
+    • LDR: 5mm photocell, 1kΩ-10kΩ resistance range, 540nm peak
+    • L298N: 5V logic, 12V motor, 2A per channel, thermal protection
+    • DC Motor: 12V, 100-200mA, 2000-3000 RPM, gear reduction optional
+    • LEDs: 3.3V forward voltage, 20mA current, 220Ω current limiting
+    • Switches: SPST momentary, 50mA contact rating, debounced in software
+
+    ┌─────────────────────────────────────────────────────────────────────────────────┐
+    │                              SYSTEM FEATURES                                   │
+    └─────────────────────────────────────────────────────────────────────────────────┘
+    
+    ✓ Real-time sensor monitoring with Firebase sync
+    ✓ Automatic lighting control based on ambient light (LDR < 400 lux)
+    ✓ Automatic motor control based on temperature (> 33°C)
+    ✓ Motion detection with instant notifications and LED indicator
+    ✓ Manual override switches with debouncing (100ms)
+    ✓ PWM motor speed control (0-100%, limited to 80% for protection)
+    ✓ Bi-directional motor control (forward/reverse)
+    ✓ Rate-limited notifications (max 10/minute)
+    ✓ WiFi auto-reconnection with connection monitoring
+    ✓ Web dashboard for remote control and monitoring
+    ✓ Hysteresis control to prevent oscillation
+    ✓ Non-blocking code using millis() timers
+    ✓ Serial debugging output for troubleshooting
 ```
 
 ### ⚠️ Important Wiring Notes
