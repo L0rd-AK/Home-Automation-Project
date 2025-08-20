@@ -1,4 +1,3 @@
-// ...existing code...
 /*
   ESP8266 Smart Home System with Firebase Realtime Database
   (Updated: improved PIR filtering for large/steady motion + dedicated motion LED)
@@ -296,62 +295,63 @@ void readDHTSensor() {
 
 void checkManualSwitches() {
   unsigned long currentTime = millis();
-  
+
   // Motor switch handling - simple button press detection
   bool motorButtonPressed = (digitalRead(SWITCH_MOTOR_PIN) == LOW);
-  
-  if (motorButtonPressed && !motorSwitchPressed && 
+
+  if (motorButtonPressed && !motorSwitchPressed &&
       (currentTime - lastMotorSwitchTime) > DEBOUNCE_DELAY) {
-    
+
     // Button just pressed down
     motorSwitchPressed = true;
     lastMotorSwitchTime = currentTime;
-    
-    // Toggle motor state
-    motorsManual = !motorsManual;
-    motorOn = motorsManual;
-    
+
+    // Toggle motor state and enter manual mode
+    motorOn = !motorOn;
+    motorsManual = true;
+
     updateMotorControl();
-    Firebase.setBool(firebaseData, "/controls/motor/manual", motorsManual);
     Firebase.setBool(firebaseData, "/controls/motor/on", motorOn);
-    
-    sendNotification("manual", "switch_motor", 
-                    motorsManual ? "Motor manually turned ON" : "Motor manually turned OFF",
+    Firebase.setBool(firebaseData, "/controls/motor/manual", true);
+
+    sendNotification("manual", "switch_motor",
+                    motorOn ? "Motor manually turned ON" : "Motor manually turned OFF",
                     "{}");
-    
-    if (DEBUG) Serial.printf("Motor switch pressed - Motor %s\n", motorsManual ? "ON" : "OFF");
+
+    if (DEBUG) Serial.printf("Motor switch pressed - Motor %s (Manual Mode)\n", motorOn ? "ON" : "OFF");
   }
   else if (!motorButtonPressed && motorSwitchPressed) {
     // Button released
     motorSwitchPressed = false;
   }
-  
+
   // LEDs switch handling - simple button press detection
   bool ledsButtonPressed = (digitalRead(SWITCH_LEDS_PIN) == LOW);
-  
-  if (ledsButtonPressed && !ledsSwitchPressed && 
+
+  if (ledsButtonPressed && !ledsSwitchPressed &&
       (currentTime - lastLedsSwitchTime) > DEBOUNCE_DELAY) {
-    
+
     // Button just pressed down
     ledsSwitchPressed = true;
     lastLedsSwitchTime = currentTime;
-    
-    // Toggle LEDs state
-    ledsManual = !ledsManual;
-    led1On = ledsManual;
-    led2On = ledsManual;
-    
+
+    // Toggle LEDs state and enter manual mode
+    bool newLedState = !led1On; // Toggle based on one LED, apply to both
+    led1On = newLedState;
+    led2On = newLedState;
+    ledsManual = true;
+
     updateLEDControl();
-    Firebase.setBool(firebaseData, "/controls/led1/manual", ledsManual);
     Firebase.setBool(firebaseData, "/controls/led1/on", led1On);
-    Firebase.setBool(firebaseData, "/controls/led2/manual", ledsManual);
     Firebase.setBool(firebaseData, "/controls/led2/on", led2On);
-    
-    sendNotification("manual", "switch_leds", 
-                    ledsManual ? "LEDs manually turned ON" : "LEDs manually turned OFF",
+    Firebase.setBool(firebaseData, "/controls/led1/manual", true);
+    Firebase.setBool(firebaseData, "/controls/led2/manual", true);
+
+    sendNotification("manual", "switch_leds",
+                    led1On ? "LEDs manually turned ON" : "LEDs manually turned OFF",
                     "{}");
-    
-    if (DEBUG) Serial.printf("LEDs switch pressed - LEDs %s\n", ledsManual ? "ON" : "OFF");
+
+    if (DEBUG) Serial.printf("LEDs switch pressed - LEDs %s (Manual Mode)\n", ledsManual ? "ON" : "OFF");
   }
   else if (!ledsButtonPressed && ledsSwitchPressed) {
     // Button released
