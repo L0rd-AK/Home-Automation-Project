@@ -21,10 +21,11 @@
 #define MOTOR_IN2_PIN     0   // D3
 #define LED1_PIN          13  // D7
 #define LED2_PIN          15  // D8
-#define MOTION_LED_PIN    1   // D9/TX (new dedicated motion LED)
+#define MOTION_LED_PIN    10   // GPIO10 - SD3
 #define SWITCH_MOTOR_PIN  2   // D4
 #define SWITCH_LEDS_PIN   16  // D0
 
+// Sensor thresholds and settings
 // Sensor thresholds and settings
 #define LDR_THRESHOLD     400   // Below this = dark, turn on lights
 #define TEMP_THRESHOLD    33.0  // Above this = hot, turn on motor
@@ -32,12 +33,11 @@
 #define DEBOUNCE_DELAY    100   // Switch debounce in ms
 #define MAX_MOTOR_PWM     204   // 80% of 255 for motor protection
 #define MAX_NOTIFICATIONS_PER_MINUTE 10
-#define SENSOR_READ_INTERVAL  200   // PIR/LDR read interval in ms (faster for responsive motion)
-#define MOTION_LED_TIMEOUT    10000 // Motion LED auto-off timeout in ms (10 seconds)
+#define SENSOR_READ_INTERVAL  100   // PIR/LDR read interval in ms (faster for responsive motion)
+#define MOTION_LED_TIMEOUT    5000  // Motion LED auto-off timeout in ms (5 seconds)
 
 // PIR sensor settings (simplified for reliability)
-#define PIR_DEBOUNCE_MS       300   // Minimum time between motion triggers
-#define PIR_STABLE_TIME_MS    150   // Time PIR must be stable before reading
+#define PIR_DEBOUNCE_MS       100   // Simple debounce for motion detection
 
 // DHT sensor setup
 #define DHT_TYPE DHT11
@@ -62,7 +62,6 @@ unsigned long notificationMinuteStart = 0;
 bool motionDetected = false;
 bool lastMotionState = false;
 unsigned long lastMotionChangeTime = 0;
-bool pirStableState = false;
 float temperature = 0;
 float humidity = 0;
 int ldrValue = 0;
@@ -85,8 +84,8 @@ int motorSpeed = 50; // 0-100%
 String motorDirection = "forward";
 
 // Switch states for debouncing
-bool lastMotorSwitchState = HIGH;
-bool lastLedsSwitchState = HIGH;
+bool motorSwitchPressed = false;
+bool ledsSwitchPressed = false;
 unsigned long lastMotorSwitchTime = 0;
 unsigned long lastLedsSwitchTime = 0;
 
@@ -112,6 +111,10 @@ void setup() {
   digitalWrite(LED1_PIN, LOW);
   digitalWrite(LED2_PIN, LOW);
   digitalWrite(MOTION_LED_PIN, LOW);
+  
+  // Initialize switch states
+  motorSwitchPressed = false;
+  ledsSwitchPressed = false;
   
   // Initialize DHT sensor
   dht.begin();
@@ -162,8 +165,8 @@ void loop() {
     lastDHTRead = currentTime;
   }
   
-  // Handle motion LED auto-off timeout
-  if (motionLedOn && currentTime >= motionLedOffTime) {
+  // Handle motion LED auto-off timeout (only if no motion currently)
+  if (motionLedOn && !motionDetected && currentTime >= motionLedOffTime) {
     motionLedOn = false;
     digitalWrite(MOTION_LED_PIN, LOW);
     if (DEBUG) Serial.println("Motion LED auto-turned off");
@@ -233,41 +236,40 @@ void initializeFirebaseState() {
 }
 
 void readSensors() {
-  // Simple and reliable PIR motion detection
+  // Simple and reliable PIR motion detection (based on working code)
   bool currentMotion = digitalRead(PIR_PIN);
   unsigned long currentTime = millis();
   
-  // Check if PIR state changed
-  if (currentMotion != lastMotionState) {
-    lastMotionState = currentMotion;
-    lastMotionChangeTime = currentTime;
-    pirStableState = false;
-  }
-  
-  // Wait for stability before acting on the reading
-  if (!pirStableState && (currentTime - lastMotionChangeTime) > PIR_STABLE_TIME_MS) {
-    pirStableState = true;
+  // Immediate response like the working code
+  if (currentMotion == HIGH) {  // Motion detected
+    digitalWrite(MOTION_LED_PIN, HIGH);  // Turn motion LED ON immediately
     
-    if (currentMotion && !motionDetected) {
-      // Motion started
+    if (lastMotionState == LOW) {  // Motion just started
       motionDetected = true;
+      lastMotionState = HIGH;
+      lastMotionChangeTime = currentTime;
       
-      sendNotification("motion", "PIR", "Motion detected", 
+      // Turn on motion LED with timeout
+      motionLedOn = true;
+      motionLedOffTime = currentTime + MOTION_LED_TIMEOUT;
+      
+      sendNotification("motion", "PIR", "Motion detected!", 
                       "{\"lux\":" + String(ldrValue) + "}");
       Firebase.setBool(firebaseData, "/state/motion", true);
       
-      // Turn on motion LED
-      motionLedOn = true;
-      motionLedOffTime = currentTime + MOTION_LED_TIMEOUT;
-      digitalWrite(MOTION_LED_PIN, HIGH);
-      
-      if (DEBUG) Serial.println("Motion detected");
+      if (DEBUG) Serial.println("Motion detected!");
     }
-    else if (!currentMotion && motionDetected) {
-      // Motion ended
+  } else {  // No motion detected
+    digitalWrite(MOTION_LED_PIN, LOW);   // Turn motion LED OFF immediately
+    
+    if (lastMotionState == HIGH) {  // Motion just stopped
       motionDetected = false;
+      lastMotionState = LOW;
+      lastMotionChangeTime = currentTime;
+      
       Firebase.setBool(firebaseData, "/state/motion", false);
-      if (DEBUG) Serial.println("Motion ended");
+      
+      if (DEBUG) Serial.println("Motion stopped!");
     }
   }
   
@@ -295,51 +297,65 @@ void readDHTSensor() {
 void checkManualSwitches() {
   unsigned long currentTime = millis();
   
-  // Check motor switch
-  bool motorSwitchState = digitalRead(SWITCH_MOTOR_PIN);
-  if (motorSwitchState != lastMotorSwitchState && 
+  // Motor switch handling - simple button press detection
+  bool motorButtonPressed = (digitalRead(SWITCH_MOTOR_PIN) == LOW);
+  
+  if (motorButtonPressed && !motorSwitchPressed && 
       (currentTime - lastMotorSwitchTime) > DEBOUNCE_DELAY) {
     
-    if (motorSwitchState == LOW) { // Switch pressed (active low)
-      motorsManual = !motorsManual;
-      motorOn = motorsManual;
-      
-      updateMotorControl();
-      Firebase.setBool(firebaseData, "/controls/motor/manual", motorsManual);
-      Firebase.setBool(firebaseData, "/controls/motor/on", motorOn);
-      
-      sendNotification("manual", "switch_motor", 
-                      motorsManual ? "Motor manually turned ON" : "Motor manually turned OFF",
-                      "{}");
-    }
-    
-    lastMotorSwitchState = motorSwitchState;
+    // Button just pressed down
+    motorSwitchPressed = true;
     lastMotorSwitchTime = currentTime;
+    
+    // Toggle motor state
+    motorsManual = !motorsManual;
+    motorOn = motorsManual;
+    
+    updateMotorControl();
+    Firebase.setBool(firebaseData, "/controls/motor/manual", motorsManual);
+    Firebase.setBool(firebaseData, "/controls/motor/on", motorOn);
+    
+    sendNotification("manual", "switch_motor", 
+                    motorsManual ? "Motor manually turned ON" : "Motor manually turned OFF",
+                    "{}");
+    
+    if (DEBUG) Serial.printf("Motor switch pressed - Motor %s\n", motorsManual ? "ON" : "OFF");
+  }
+  else if (!motorButtonPressed && motorSwitchPressed) {
+    // Button released
+    motorSwitchPressed = false;
   }
   
-  // Check LEDs switch
-  bool ledsSwitchState = digitalRead(SWITCH_LEDS_PIN);
-  if (ledsSwitchState != lastLedsSwitchState && 
+  // LEDs switch handling - simple button press detection
+  bool ledsButtonPressed = (digitalRead(SWITCH_LEDS_PIN) == LOW);
+  
+  if (ledsButtonPressed && !ledsSwitchPressed && 
       (currentTime - lastLedsSwitchTime) > DEBOUNCE_DELAY) {
     
-    if (ledsSwitchState == LOW) { // Switch pressed (active low)
-      ledsManual = !ledsManual;
-      led1On = ledsManual;
-      led2On = ledsManual;
-      
-      updateLEDControl();
-      Firebase.setBool(firebaseData, "/controls/led1/manual", ledsManual);
-      Firebase.setBool(firebaseData, "/controls/led1/on", led1On);
-      Firebase.setBool(firebaseData, "/controls/led2/manual", ledsManual);
-      Firebase.setBool(firebaseData, "/controls/led2/on", led2On);
-      
-      sendNotification("manual", "switch_leds", 
-                      ledsManual ? "LEDs manually turned ON" : "LEDs manually turned OFF",
-                      "{}");
-    }
-    
-    lastLedsSwitchState = ledsSwitchState;
+    // Button just pressed down
+    ledsSwitchPressed = true;
     lastLedsSwitchTime = currentTime;
+    
+    // Toggle LEDs state
+    ledsManual = !ledsManual;
+    led1On = ledsManual;
+    led2On = ledsManual;
+    
+    updateLEDControl();
+    Firebase.setBool(firebaseData, "/controls/led1/manual", ledsManual);
+    Firebase.setBool(firebaseData, "/controls/led1/on", led1On);
+    Firebase.setBool(firebaseData, "/controls/led2/manual", ledsManual);
+    Firebase.setBool(firebaseData, "/controls/led2/on", led2On);
+    
+    sendNotification("manual", "switch_leds", 
+                    ledsManual ? "LEDs manually turned ON" : "LEDs manually turned OFF",
+                    "{}");
+    
+    if (DEBUG) Serial.printf("LEDs switch pressed - LEDs %s\n", ledsManual ? "ON" : "OFF");
+  }
+  else if (!ledsButtonPressed && ledsSwitchPressed) {
+    // Button released
+    ledsSwitchPressed = false;
   }
 }
 
